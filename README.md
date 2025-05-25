@@ -1,4 +1,36 @@
-## Requirements
+# Live Odds Board
+
+A real-time sports betting odds board that displays thousands of live matches. Features include live odds updates, score tracking, and efficient handling of large datasets through virtualization.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js >= 20.0.0
+- pnpm >= 8.0.0
+
+### Development Setup
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+3. Start the development server:
+   ```bash
+   pnpm dev
+   ```
+
+### VS Code / Cursor Setup
+
+When using VS Code or Cursor, ensure proper TypeScript support:
+
+1. Open any TypeScript file
+2. Press `Cmd + Shift + P` (Mac) or `Ctrl + Shift + P` (Windows/Linux)
+3. Type "Select TypeScript Version"
+4. Choose "Use Workspace Version"
+
+## Task Requirements
 
 The task is to implement live odds board application that displays thousands of live
 matches in a virtualized, real-time updating table.
