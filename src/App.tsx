@@ -7,6 +7,7 @@ import styles from "./components/FetchButton.module.css";
 import { useEffect } from "react";
 import { useMatchUpdates } from "./contexts/MatchUpdatesContext";
 import { useSelectedOddsStore } from "./stores/selectedOddsStore";
+import { FloatingHomeButton } from "./components/FloatingHomeButton";
 
 type PageParam = {
 	cursor: string | null;
@@ -109,68 +110,67 @@ export default function App() {
 		};
 	}, [ws, removeSelectedOdds]);
 
-	if (status === "pending") {
-		return <div>Loading...</div>;
-	}
-
-	if (status === "error") {
-		return <div>Error: {error.message}</div>;
-	}
-
 	const canFetchPrevious =
 		!isFetchingPreviousPage &&
 		hasPreviousPage &&
-		(hasAttemptedPreviousFetch || data.pages.length > 1);
+		(hasAttemptedPreviousFetch || (data?.pages.length ?? 0) > 1);
 	const canFetchNext = !isFetchingNextPage && hasNextPage;
 
 	return (
 		<main style={{ width: "100%", maxWidth: 600, margin: "0 auto" }}>
+			<h1 style={{ margin: "12px 0 24px" }}>Betting Odds</h1>
+
 			{hasPreviousPage && (
 				<button onClick={handlePreviousFetch} className={styles.button}>
 					Fetch Previous Page
 				</button>
 			)}
 
-			<div ref={listRef}>
-				<BidirectionalInfiniteList
-					rows={rows}
-					rowHeight={250}
-					renderItem={(item) => (
-						<Match
-							id={item.id}
-							sport={item.sport}
-							homeTeam={item.competitors.home}
-							awayTeam={item.competitors.away}
-							startTime={item.startTime}
-							score={item.score}
-							markets={item.markets}
-							lastUpdated={item.lastUpdated}
-						/>
-					)}
-					edgeReachedThreshold={20}
-					onStartReached={() => {
-						console.log("onStartReached");
-						return fetchPreviousPage();
-					}}
-					canFetchPrevious={canFetchPrevious}
-					onEndReached={() => {
-						console.log("onEndReached");
-						return fetchNextPage();
-					}}
-					canFetchNext={canFetchNext}
-					scrollMargin={listRef.current?.offsetTop ?? 0}
-					onChange={(virtualItems, sync) => {
-						if (virtualItems.length === 0) {
-							return;
-						}
+			{status === "pending" ? (
+				<div>Loading...</div>
+			) : status === "error" && error instanceof Error ? (
+				<div>Error: {error.message}</div>
+			) : (
+				<div ref={listRef}>
+					<BidirectionalInfiniteList
+						rows={rows}
+						rowHeight={250}
+						renderItem={(item) => (
+							<Match
+								id={item.id}
+								sport={item.sport}
+								homeTeam={item.competitors.home}
+								awayTeam={item.competitors.away}
+								startTime={item.startTime}
+								score={item.score}
+								markets={item.markets}
+								lastUpdated={item.lastUpdated}
+							/>
+						)}
+						edgeReachedThreshold={20}
+						onStartReached={() => {
+							console.log("onStartReached");
+							return fetchPreviousPage();
+						}}
+						canFetchPrevious={canFetchPrevious}
+						onEndReached={() => {
+							console.log("onEndReached");
+							return fetchNextPage();
+						}}
+						canFetchNext={canFetchNext}
+						scrollMargin={listRef.current?.offsetTop ?? 0}
+						onChange={(virtualItems, sync) => {
+							if (virtualItems.length === 0) {
+								return;
+							}
 
-						if (!sync) {
-							history.replaceState(null, "", `#${virtualItems[0].id}`);
-						}
-					}}
-				/>
-			</div>
-
+							if (!sync) {
+								history.replaceState(null, "", `#${virtualItems[0].id}`);
+							}
+						}}
+					/>
+				</div>
+			)}
 			{hasNextPage && (
 				<a
 					href={`/#${rows[rows.length - 1].id}`}
@@ -180,6 +180,8 @@ export default function App() {
 					Fetch Next Page
 				</a>
 			)}
+
+			<FloatingHomeButton />
 		</main>
 	);
 }
