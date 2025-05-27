@@ -1,0 +1,23 @@
+.button {
+	margin: 16px auto;
+	display: block;
+	padding: 8px 16px;
+	background-color: #f1f5f9;
+	color: #0f172a;
+	text-decoration: none;
+	border-radius: 4px;
+	cursor: pointer;
+	border: 1px solid #e2e8f0;
+	transition: background-color 0.2s;
+	font-family: inherit;
+	font-size: inherit;
+}
+
+.button:hover {
+	background-color: #e2e8f0;
+}
+
+.link {
+	composes: button;
+	text-decoration: none;
+}
