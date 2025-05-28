@@ -39,15 +39,26 @@ export type Match = {
 	lastUpdated: string;
 };
 
-export type MatchUpdate = {
+export type MatchUpdateEvent = {
+	type: "update";
 	id: string;
-	score?: Score;
-	markets?: {
+	score: {
+		home: number;
+		away: number;
+	};
+	markets: {
 		id: string;
+		name: string;
 		options: {
 			id: string;
+			name: string;
 			odds: number;
 		}[];
 	}[];
 	lastUpdated: string;
+};
+
+export type SuspendedEvent = {
+	type: "suspended";
+	matchId: string;
 };

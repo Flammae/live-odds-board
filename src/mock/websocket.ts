@@ -1,24 +1,28 @@
 type SubscribedMatches = Set<string>;
 
-interface MatchUpdate {
-	type: "score" | "odds";
+type MatchUpdate = {
+	type: "update";
 	id: string;
-	score?: {
+	score: {
 		home: number;
 		away: number;
 	};
-	markets?: {
-		[key: string]: {
-			[key: string]: number;
-		};
-	};
+	markets: {
+		id: string;
+		name: string;
+		options: {
+			id: string;
+			name: string;
+			odds: number;
+		}[];
+	}[];
 	lastUpdated: string;
-}
+};
 
-interface SuspendedEvent {
+type SuspendedEvent = {
 	type: "suspended";
 	matchId: string;
-}
+};
 
 type WebSocketMessage = {
 	type: "subscribe" | "unsubscribe";
@@ -50,28 +54,75 @@ class MockWebSocket {
 	}
 
 	private static generateRandomUpdate(matchId: string): MatchUpdate {
-		const updateType = Math.random() > 0.5 ? "score" : "odds";
-
 		const update: MatchUpdate = {
-			type: updateType,
+			type: "update",
 			id: matchId,
-			lastUpdated: new Date().toISOString(),
-		};
-
-		if (updateType === "score") {
-			update.score = {
+			score: {
 				home: Math.floor(Math.random() * 5),
 				away: Math.floor(Math.random() * 5),
-			};
-		} else {
-			update.markets = {
-				"1x2": {
-					"1": Number((Math.random() * 2 + 1).toFixed(2)),
-					X: Number((Math.random() * 2 + 1).toFixed(2)),
-					"2": Number((Math.random() * 2 + 1).toFixed(2)),
+			},
+			markets: [
+				{
+					id: "1x2",
+					name: "1X2",
+					options: [
+						{
+							id: "1x2_1",
+							name: "1",
+							odds: Number((Math.random() * 2 + 1).toFixed(2)),
+						},
+						{
+							id: "1x2_X",
+							name: "X",
+							odds: Number((Math.random() * 2 + 1).toFixed(2)),
+						},
+						{
+							id: "1x2_2",
+							name: "2",
+							odds: Number((Math.random() * 2 + 1).toFixed(2)),
+						},
+					],
 				},
-			};
-		}
+				{
+					id: "double_chance",
+					name: "Double Chance",
+					options: [
+						{
+							id: "double_chance_1X",
+							name: "1X",
+							odds: Number((Math.random() * 2 + 1).toFixed(2)),
+						},
+						{
+							id: "double_chance_12",
+							name: "12",
+							odds: Number((Math.random() * 2 + 1).toFixed(2)),
+						},
+						{
+							id: "double_chance_X2",
+							name: "X2",
+							odds: Number((Math.random() * 2 + 1).toFixed(2)),
+						},
+					],
+				},
+				{
+					id: "total",
+					name: "Total",
+					options: [
+						{
+							id: "total_Over 2.5",
+							name: "Over 2.5",
+							odds: Number((Math.random() * 2 + 1).toFixed(2)),
+						},
+						{
+							id: "total_Under 2.5",
+							name: "Under 2.5",
+							odds: Number((Math.random() * 2 + 1).toFixed(2)),
+						},
+					],
+				},
+			],
+			lastUpdated: new Date().toISOString(),
+		};
 
 		return update;
 	}
@@ -101,8 +152,10 @@ class MockWebSocket {
 
 		// Emit updates for subscribed matches
 		MockWebSocket.subscribedMatches.forEach((matchId) => {
-			const update = MockWebSocket.generateRandomUpdate(matchId);
-			instance.dispatchEvent("message", JSON.stringify(update));
+			if (Math.random() < 0.5) {
+				const update = MockWebSocket.generateRandomUpdate(matchId);
+				instance.dispatchEvent("message", JSON.stringify(update));
+			}
 		});
 	}
 

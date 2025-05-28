@@ -4,16 +4,18 @@ import { BidirectionalInfiniteList } from "./components/BidirectionalInfiniteLis
 import { fetchMatches } from "./utils/fetchMatches";
 import { Match } from "./components/Match";
 import styles from "./components/FetchButton.module.css";
-import { useEffect } from "react";
-import { useMatchUpdates } from "./contexts/MatchUpdatesContext";
-import { useSelectedOddsStore } from "./stores/selectedOddsStore";
+import { useMatchEvents } from "./contexts/MatchUpdatesContext";
 import { FloatingHomeButton } from "./components/FloatingHomeButton";
+import { useSelectedOddsStore } from "./stores/selectedOddsStore";
+import { useMatchUpdatesStore } from "./stores/matchUpdatesStore";
 
 type PageParam = {
 	cursor: string | null;
 	limit: number;
 	isInitialFetch?: boolean;
 };
+
+const LIMIT = 40;
 
 function getInitialCursor(): string | null {
 	const hash = window.location.hash;
@@ -28,14 +30,12 @@ export default function App() {
 	const initialCursor = React.useMemo(() => getInitialCursor(), []);
 	const [hasAttemptedPreviousFetch, setHasAttemptedPreviousFetch] =
 		React.useState(false);
-	const removeSelectedOdds = useSelectedOddsStore(
-		(state) => state.removeSelectedOdds
-	);
 
 	const {
-		status,
 		data,
 		error,
+		isPending,
+		isError,
 		isFetchingNextPage,
 		isFetchingPreviousPage,
 		fetchNextPage,
@@ -45,14 +45,15 @@ export default function App() {
 	} = useInfiniteQuery({
 		queryKey: ["matches"],
 		maxPages: 3,
+		retry: 3,
+		retryDelay: 400,
 		initialPageParam: {
 			cursor: initialCursor,
-			limit: 40,
+			limit: LIMIT,
 			isInitialFetch: true,
 		} as PageParam,
 		queryFn: async ({ pageParam }) => {
 			const { cursor, limit, isInitialFetch } = pageParam as PageParam;
-			console.log("isInitialFetch", isInitialFetch, cursor, limit);
 			const result = await fetchMatches(cursor, limit, isInitialFetch ?? false);
 			return result;
 		},
@@ -61,7 +62,7 @@ export default function App() {
 			const lastItem = lastPage.items[lastPage.items.length - 1];
 			return {
 				cursor: lastItem.id,
-				limit: 40,
+				limit: LIMIT,
 				isInitialFetch: false,
 			} as PageParam;
 		},
@@ -70,7 +71,7 @@ export default function App() {
 			const firstItem = firstPage.items[0];
 			return {
 				cursor: firstItem.id,
-				limit: -40,
+				limit: -LIMIT,
 				isInitialFetch: false,
 			} as PageParam;
 		},
@@ -80,41 +81,29 @@ export default function App() {
 		return data?.pages.flatMap((page) => page.items) ?? [];
 	}, [data]);
 
-	const handlePreviousFetch = React.useCallback(() => {
+	const handlePreviousFetch = () => {
 		setHasAttemptedPreviousFetch(true);
 		fetchPreviousPage();
-	}, [fetchPreviousPage]);
+	};
 
-	const handleNextFetch = React.useCallback(
-		(e: React.MouseEvent) => {
-			e.preventDefault();
-			fetchNextPage();
-		},
-		[fetchNextPage]
+	const handleNextFetch = (e: React.MouseEvent) => {
+		e.preventDefault();
+		fetchNextPage();
+	};
+
+	// Sockets
+	const removeSelectedOdds = useSelectedOddsStore(
+		(state) => state.removeSelectedOdds
 	);
-
-	const ws = useMatchUpdates();
-
-	useEffect(() => {
-		const handleMessage = (data: string) => {
-			const parsed = JSON.parse(data);
-			if (parsed.type === "suspended") {
-				// Remove the match from selected odds when it's suspended
-				removeSelectedOdds(parsed.matchId);
-			}
-		};
-
-		ws.addEventListener("message", handleMessage);
-		return () => {
-			ws.removeEventListener("message", handleMessage);
-		};
-	}, [ws, removeSelectedOdds]);
-
-	const canFetchPrevious =
-		!isFetchingPreviousPage &&
-		hasPreviousPage &&
-		(hasAttemptedPreviousFetch || (data?.pages.length ?? 0) > 1);
-	const canFetchNext = !isFetchingNextPage && hasNextPage;
+	const addMatch = useMatchUpdatesStore((state) => state.addMatch);
+	useMatchEvents({
+		onSuspended: (event) => {
+			removeSelectedOdds(event.matchId);
+		},
+		onUpdated: (event) => {
+			addMatch(event);
+		},
+	});
 
 	return (
 		<main style={{ width: "100%", maxWidth: 600, margin: "0 auto" }}>
@@ -126,10 +115,14 @@ export default function App() {
 				</button>
 			)}
 
-			{status === "pending" ? (
+			{isPending ? (
 				<div>Loading...</div>
-			) : status === "error" && error instanceof Error ? (
-				<div>Error: {error.message}</div>
+			) : isError ? (
+				<div>
+					Error: {error.message}
+					<br />
+					<a href="/">Go to home</a>
+				</div>
 			) : (
 				<div ref={listRef}>
 					<BidirectionalInfiniteList
@@ -152,12 +145,16 @@ export default function App() {
 							console.log("onStartReached");
 							return fetchPreviousPage();
 						}}
-						canFetchPrevious={canFetchPrevious}
+						canFetchPrevious={
+							!isFetchingPreviousPage &&
+							hasPreviousPage &&
+							(hasAttemptedPreviousFetch || (data.pages.length ?? 0) > 1)
+						}
 						onEndReached={() => {
 							console.log("onEndReached");
 							return fetchNextPage();
 						}}
-						canFetchNext={canFetchNext}
+						canFetchNext={!isFetchingNextPage && hasNextPage}
 						scrollMargin={listRef.current?.offsetTop ?? 0}
 						onChange={(virtualItems, sync) => {
 							if (virtualItems.length === 0) {

@@ -87,15 +87,45 @@
 }
 
 .option.selected {
-	background-color: #4caf50;
-	color: white;
-	border-color: #45a049;
+	outline-color: cornflowerblue;
+	outline-width: 3px;
+	outline-style: solid;
+	outline-offset: -2px;
 }
 
-.option.selected:hover {
-	background-color: #45a049;
+@keyframes increaseAnimation {
+	0% {
+		background-color: white;
+	}
+	50% {
+		background-color: lightgreen;
+	}
+	100% {
+		background-color: white;
+	}
+}
+
+@keyframes decreaseAnimation {
+	0% {
+		background-color: white;
+	}
+	50% {
+		background-color: lightcoral;
+	}
+	100% {
+		background-color: white;
+	}
+}
+
+.option.increase {
+	animation: increaseAnimation 1s ease-in-out;
+}
+
+.option.decrease {
+	animation: decreaseAnimation 1s ease-in-out;
 }
 
 .odds {
 	font-weight: bold;
+	display: block;
 }

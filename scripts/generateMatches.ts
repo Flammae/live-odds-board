@@ -108,8 +108,8 @@ function generateMatch(startTime: Date): Match {
 		},
 		startTime: startTime.toISOString(),
 		score: {
-			home: 0,
-			away: 0,
+			home: Math.floor(Math.random() * 5),
+			away: Math.floor(Math.random() * 5),
 		},
 		markets: MARKET_TYPES.map((marketType) =>
 			generateBettingMarket(marketType)
