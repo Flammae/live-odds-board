@@ -81,16 +81,27 @@ Frontend architectural decisions and optimizations are derived from this data sp
 - In server responses, the "Last Item" is excluded from next pages and included in previous pages.
 - If there are no more items in the previous or next page, the server responds with a 404.
 - On page refresh, only the current page data is loaded, and the list scrolls to the previous position.
-- When scrolling up, removed items are no longer visible in the infinite list.
+- When scrolling back up, removed items are no longer visible in the infinite list.
 - **TanStack Virtual** is used to optimize rendering performance for large lists.
 - As the user scrolls near the ends of the list, previous or next pages are automatically requested.
 
----
+### Websockets
 
-## Related Problems
+- The frontend manages real-time updates for thousands of matches by subscribing only to visible matches. This is done by sending match IDs to the backend when matches become visible in the viewport.
+- To optimize performance, we use TanStack Virtual to only subscribe to matches that are currently visible in the viewport. This prevents unnecessary websocket updates for off-screen matches.
+- Match updates are stored in a Zustand store instead of directly updating the list data. This prevents expensive re-renders of the entire list when a single match updates.
+- Each match update includes a timestamp. The Match component uses this timestamp to compare with its current data and only shows the newer version, ensuring users always see the most recent information.
 
-- **SEO Friendliness:**  
-  SEO can be improved by updating the URL to reflect the current page in the infinite list. In SSR environments, `useInfiniteList` can be configured to preload the current page, reducing the need for client-side JavaScript.
+### Selected Odds
+
+- Selected odds are saved in localStorage using Zustand
+- Old selections (>30 minutes) are automatically cleared on page load
+
+### UX
+
+- When reloading a scrolled page, previous items are only loaded after the user explicitly clicks the "Load Previous Items" button
+- A "Go to Start" button appears when the list is scrolled down. This helps users quickly return to the beginning of the list, especially useful when viewing outdated matches after leaving the tab open for an extended period.
+- SEO can be improved by updating the URL to reflect the current page in the infinite list. In SSR environments, `useInfiniteList` can be configured to preload the current page, Allowing bots to index the page.
 
 ---
 
