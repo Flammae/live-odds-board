@@ -18,7 +18,7 @@ A real-time sports betting odds board that displays thousands of live matches. F
    ```
 3. Generate mock data (required for the application to work):
    ```bash
-   pnpm tsx mock/generateMatches.ts
+   pnpm generate
    ```
 4. Start the development server:
    ```bash
